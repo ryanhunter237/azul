@@ -1,0 +1,23 @@
+# Model Constants
+NUM_TILES = 5
+TILES_PER_COLOR = 20
+NUM_PLAYERS = 2
+NUM_FACTORIES = 5
+TILES_PER_FACTORY = 4
+FLOOR_CAPACITY = 7
+FLOOR_PENALTIES = [-1, -1, -2, -2, -2, -3, -3]
+ALL_TILES_BONUS = 10
+ROW_BONUS = 2
+COLUMN_BONUS = 7
+
+# View Constants
+TILE_SIZE = 45
+PADDING = 6
+TEXT_HEIGHT = 10
+BOLD_WIDTH = 3
+SCALING = 3.5
+BOARD_BG = 'khaki'
+OUTLINE = 'khaki4'
+FACTORY_BG = 'khaki3'
+TILE_COLORS = ['blue', 'orange', 'red', 'gray15', 'dark turquoise', 'white']
+PATTERN_LINE_INDICES = [[1],[2,3],[4,5,6],[7,8,9,10],[11,12,13,14,15]]
