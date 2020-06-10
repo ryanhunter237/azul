@@ -142,6 +142,16 @@ class PlayerBoard(tk.Frame):
 			text="Player {}\nScore: {}".format(self.player_id, 0),
 			borderwidth=0, relief="ridge")
 
+	def add_pattern_lines_command(self, func):
+		canvas = self.pattern_lines
+		for tile in canvas.find_withtag("tile"):
+			canvas.tag_bind(tile, "<Button-1>", lambda event, canvas=canvas: func(event, canvas))
+
+	def add_floor_line_command(self, func):
+		canvas = self.floor_line
+		for tile in canvas.find_withtag("tile"):
+			canvas.tag_bind(tile, "<Button-1>", lambda event, canvas=canvas: func(event, canvas))
+
 class Factory(tk.Canvas):
 	def __init__(self, master):
 		super().__init__(
@@ -229,12 +239,22 @@ class CenterBoard(tk.Frame):
 class Menu(tk.Menu):
 	def __init__(self, master):
 		super().__init__(master)
-		self.add_command(label="New Game")
+		self.game_menu = self.game_menu()
+		self.add_cascade(label="New Game", menu=self.game_menu)
 		self.add_command(label="Exit", command=master.quit)
 		master.config(menu=self)
 
-	def add_start_command(self, func):
-		self.entryconfig(1, command=func)
+	def game_menu(self):
+		game_menu = tk.Menu(self, tearoff=0)
+		game_menu.add_command(label="vs Person")
+		game_menu.add_command(label="vs Computer")
+		return game_menu
+
+	def add_vs_person_command(self, func):
+		self.game_menu.entryconfig(0, command=func)
+
+	def add_vs_computer_command(self, func):
+		self.game_menu.entryconfig(1, command=func)
 
 class View(tk.Frame):
 	def __init__(self, master):
@@ -270,14 +290,5 @@ class View(tk.Frame):
 				if color != 'white':
 					return color
 
-	def add_pattern_lines_command(self, func):
-		for board in self.boards:
-			canvas = board.pattern_lines
-			for tile in canvas.find_withtag("tile"):
-				canvas.tag_bind(tile, "<Button-1>", lambda event, canvas=canvas: func(event, canvas))
-
-	def add_floor_line_command(self, func):
-		for board in self.boards:
-			canvas = board.floor_line
-			for tile in canvas.find_withtag("tile"):
-				canvas.tag_bind(tile, "<Button-1>", lambda event, canvas=canvas: func(event, canvas))
+	def update(self):
+		tk.update()
