@@ -2,6 +2,9 @@ from model import Model, Tile, Move
 from view import View, PatternLines
 from constants import *
 
+import time
+import tkinter as tk
+
 def color_of_tile(test_tile):
     for color, tile in zip(TILE_COLORS, Tile):
         if tile == test_tile:
@@ -16,15 +19,34 @@ class Controller:
     def __init__(self, root):
         self.model = Model.start()
         self.view = View(root)
-        self.view.menu.add_start_command(self.setup_game)
-        self.view.add_pattern_lines_command(self.make_move)
-        self.view.add_floor_line_command(self.make_move)
+        self.view.menu.add_vs_person_command(self.setup_pvp_game)
+        self.view.menu.add_vs_computer_command(self.setup_pvc_game)
 
-    def setup_game(self):
+    def setup_pvp_game(self):
         self.model = Model.start()
         for board in self.view.boards:
             board.clear()
+            board.add_pattern_lines_command(self.make_player_move)
+            board.add_floor_line_command(self.make_player_move)
         self.setup_round()
+
+    def setup_pvc_game(self):
+        # assume computer plays second for now
+        self.model = Model.start()
+        board = self.view.boards[0]
+        board.add_pattern_lines_command(self.make_player_move)
+        board.add_floor_line_command(self.make_player_move)
+        self.computer_player()
+        self.setup_round()
+
+    def computer_player(self):
+        self.make_computer_move()
+        self.job = self.view.master.after(1000, self.computer_player)
+
+    def make_computer_move(self):
+        if self.model.next_player == 1:
+            move = self.model.random_move()
+            self.make_move(move)
 
     def setup_round(self):
         self.model.setup_round()
@@ -55,6 +77,7 @@ class Controller:
             else:
                 color = BOARD_BG
             factory.itemconfig(tile_indices[i], fill=color, width=1)
+        factory.update()
 
     def fill_center(self):
         # update view
@@ -67,6 +90,7 @@ class Controller:
                 color = BOARD_BG
             center.itemconfig(tile_indices[i], fill=color)
             center.itemconfig(tile_indices[i], width=1)
+        center.update()
 
     def fill_pattern_lines(self, player, pattern_line_idx):
         board = self.view.boards[player]
@@ -77,16 +101,19 @@ class Controller:
             color = BOARD_BG
         num = pattern_line.num
         board.pattern_lines.fill(pattern_line_idx, color, num)
+        board.pattern_lines.update()
 
     def fill_floor_line(self, player):
         board = self.view.boards[player]
         floor_line = self.model.boards[player].floor_line
         board.fill_floor_line([color_of_tile(tile) for tile in floor_line])
+        board.floor_line.update()
 
     def update_score(self, player):
         board = self.view.boards[player]
         score = self.model.boards[player].score
         board.score_label.config(text="Player {}\nScore: {}".format(player, score))
+        board.score_label.update()
 
     def fill_wall(self, player):
         board = self.view.boards[player]
@@ -97,6 +124,7 @@ class Controller:
                 if model_wall[row, col] != 0:
                     idx = tile_indices[row*NUM_TILES + col]
                     board.wall.itemconfig(idx, stipple='', width=BOLD_WIDTH)
+        board.wall.update()
 
     def mark_player(self):
         player = self.model.next_player
@@ -107,6 +135,7 @@ class Controller:
                 board.config(highlightthickness=3)
             else:
                 board.config(highlightthickness=0)
+            board.update()
 
     def mark_winner(self):
         for player in range(2):
@@ -130,21 +159,43 @@ class Controller:
         player = move_canvas.master.player_id
         return Move(factory_idx, tile_of_color(color), line_idx)
 
-    def make_move(self, event, move_line):
+    def make_player_move(self, event, move_line):
+        # process a player's move from an event in self.view
         # move_line is the canvas (pattern_lines or floor_line) where the move is played
         move = self.selected_move(event, move_line)
-        player = move_line.master.player_id
-        if self.model.is_valid_move(move, player):
-            self.model.make_move(move)
-            self.fill_factory(move.factory)
-            self.fill_center()
-            self.fill_pattern_lines(player, move.pattern_line)
-            self.fill_floor_line(player)
+        selected_board = move_line.master.player_id
+        if self.model.is_valid_move(move, selected_board):
+            self.make_move(move)
+
+    def make_computer_move(self):
+        if self.model.next_player == 1:
+            move = self.model.random_move()
+            self.make_move(move)
+
+    def make_player_and_computer_move(self, event, move_line):
+        if self.model.next_player == 0:
+            self.make_player_move(event, move_line)
+            self.view.master.after(2000)
+            self.make_computer_move()
+        else:
+            self.view.master.after(2000)
+            self.make_computer_move()
+            self.make_player_move(event, move_line)
+
+    def make_move(self, move):
+        player = self.model.next_player
+        self.model.make_move(move)
+        self.fill_factory(move.factory)
+        self.fill_center()
+        self.fill_pattern_lines(player, move.pattern_line)
+        self.fill_floor_line(player)
         if self.model.round_over():
             self.cleanup_round()
             if self.model.game_over():
                 self.model.score_endgame()
                 self.mark_winner()
+                if self.job:
+                    self.view.master.after_cancel(self.job)
             else:
                 self.setup_round()
         self.mark_player()

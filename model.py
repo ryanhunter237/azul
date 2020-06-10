@@ -211,6 +211,8 @@ class Model:
         # returns True if a move is valid for player in the current game state
         if self.next_player != player:
             return False
+        if not move:
+            return False
         if move.factory is None:
             return False
         player_board = self.boards[player]
@@ -220,6 +222,21 @@ class Model:
             return False
         pattern_line = player_board.pattern_lines[move.pattern_line]
         return pattern_line.open_for_tile(move.tile)
+
+    def random_move(self):
+        possible_factories = [i for i in range(NUM_FACTORIES) if self.factories[i]]
+        if len(self.center) > 1 or Tile.white not in self.center:
+            possible_factories.append(-1)
+        factory = np.random.choice(possible_factories)
+        if factory == -1:
+            tile = np.random.choice([tile for tile in self.center if tile != Tile.white])
+        else:
+            tile = np.random.choice(self.factories[factory])
+        board = self.boards[self.next_player]
+        possible_pattern_lines = [i for i in range(NUM_TILES) if board.pattern_lines[i].open_for_tile(tile)]
+        possible_pattern_lines.append(-1)
+        pattern_line = np.random.choice(possible_pattern_lines)
+        return Move(factory, tile, pattern_line)
 
     def make_move(self, move):
         # play out the given move on the PlayerBoard corresponding to the index of player
@@ -292,9 +309,7 @@ class Model:
 
     def score_endgame(self):
         for player_board in self.boards:
-            print("old score = {}".format(player_board.score))
             player_board.score_endgame()
-            print("new score = {}".format(player_board.score))
 
     def winner(self):
         scores = [board.score for board in self.boards]
