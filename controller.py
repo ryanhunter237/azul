@@ -1,7 +1,7 @@
 from model import Model, Tile, Move
 from view import View, PatternLines
 from constants import *
-from basic_players import Random_Player
+from basic_players import Heuristic_Player
 
 def color_of_tile(test_tile):
     for color, tile in zip(TILE_COLORS, Tile):
@@ -31,10 +31,12 @@ class Controller:
     def setup_pvc_game(self):
         # assume computer plays second for now
         self.model = Model.start()
+        for board in self.view.boards:
+            board.clear()
         board = self.view.boards[0]
         board.add_pattern_lines_command(self.make_player_move)
         board.add_floor_line_command(self.make_player_move)
-        self.computer_player = Random_Player()
+        self.computer_player = Heuristic_Player()
         self.make_computer_move()
         self.setup_round()
 
@@ -175,7 +177,7 @@ class Controller:
             if self.model.game_over():
                 self.model.score_endgame()
                 self.mark_winner()
-                if hassattr(self, "job"):
+                if hasattr(self, "job"):
                     self.view.master.after_cancel(self.job)
             else:
                 self.setup_round()
