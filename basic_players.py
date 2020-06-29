@@ -43,6 +43,33 @@ class Heuristic_Player:
 		else:
 			return len([t for t in gamestate.factories[move.factory] if t == move.tile])
 
+	def predicted_bonus(self, board):
+		bonus = 0
+		for row in range(NUM_TILES):
+			capacity = NUM_TILES * (row+1)
+			num = np.sum(board.wall[row,:] != 0) * (row+1)
+			num += board.pattern_lines[row].num
+			bonus += ROW_BONUS*num/capacity
+		for col in range(NUM_TILES):
+			num = 0
+			for row in range(NUM_TILES):
+				if board.wall[row, col] != 0:
+					num += (row+1)
+				elif board.pattern_lines[row].tile:
+					tile_val = board.pattern_lines[row].tile.value
+					if (tile_val + row - 1) % 5 == col:
+						num += board.pattern_lines[row].num
+			bonus += COLUMN_BONUS*num/15
+		for tile in list(Tile):
+			num = 0
+			for row in range(NUM_TILES):
+				if tile.value in board.wall[row]:
+					num += (row+1)
+				elif tile == board.pattern_lines[row].tile:
+					num += board.pattern_lines[row].num
+			bonus += ALL_TILES_BONUS*num/15
+		return bonus
+
 	def move_score(self, move, gamestate):
 		board = gamestate.boards[gamestate.next_player].copy()
 		num_tiles = self.num_tiles_in_move(move, gamestate)
@@ -52,17 +79,11 @@ class Heuristic_Player:
 		    board.add_to_pattern_line(move.pattern_line, move.tile, num_tiles)
 		board.score_round()
 		score = board.score
-		if move.to_floor_line():
-			return score
-		line = board.pattern_lines[move.pattern_line]
-		if line.is_full():
-			return score + num_tiles
-		else:
-			return score + num_tiles - 0.5*(line.capacity - line.num)
+		return score + self.predicted_bonus(board)
 
 	def move(self, gamestate):
 		moves = self.possible_moves(gamestate)
-		print(f"num moves = {len(moves)}")
+		#print(f"num moves = {len(moves)}")
 		max_score = -10
 		for move in moves:
 			score = self.move_score(move, gamestate)
