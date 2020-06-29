@@ -289,6 +289,3 @@ class View(tk.Frame):
 				color = canvas.itemcget(tile, "fill")
 				if color != 'white':
 					return color
-
-	def update(self):
-		tk.update()

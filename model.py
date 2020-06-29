@@ -53,6 +53,9 @@ class PatternLine:
         self.tile = None
         self.num = 0
 
+    def copy(self):
+        return PatternLine(self.capacity, self.tile, self.num)
+
 class PlayerBoard:
     # Wall is the NUM_TILES-by-NUM_TILES grid of placed tiles
     # Pattern lines are NUM_TILES many rows of tiles that have not been placed on the wall
@@ -174,6 +177,13 @@ class PlayerBoard:
         rows = self.complete_rows()
         self.score += (ALL_TILES_BONUS*all_tiles + COLUMN_BONUS*columns + ROW_BONUS*rows)
 
+    def copy(self):
+        return PlayerBoard(
+            np.copy(self.wall), 
+            self.score, 
+            [line.copy() for line in self.pattern_lines], 
+            self.floor_line.copy())
+
 class Model:
     # boards is a list of one PlayerBoard for every player
     # factories is a list of NUM_FACTORIES lists.  
@@ -222,21 +232,6 @@ class Model:
             return False
         pattern_line = player_board.pattern_lines[move.pattern_line]
         return pattern_line.open_for_tile(move.tile)
-
-    def random_move(self):
-        possible_factories = [i for i in range(NUM_FACTORIES) if self.factories[i]]
-        if len(self.center) > 1 or Tile.white not in self.center:
-            possible_factories.append(-1)
-        factory = np.random.choice(possible_factories)
-        if factory == -1:
-            tile = np.random.choice([tile for tile in self.center if tile != Tile.white])
-        else:
-            tile = np.random.choice(self.factories[factory])
-        board = self.boards[self.next_player]
-        possible_pattern_lines = [i for i in range(NUM_TILES) if board.pattern_lines[i].open_for_tile(tile)]
-        possible_pattern_lines.append(-1)
-        pattern_line = np.random.choice(possible_pattern_lines)
-        return Move(factory, tile, pattern_line)
 
     def make_move(self, move):
         # play out the given move on the PlayerBoard corresponding to the index of player

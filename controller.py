@@ -1,9 +1,7 @@
 from model import Model, Tile, Move
 from view import View, PatternLines
 from constants import *
-
-import time
-import tkinter as tk
+from basic_players import Heuristic_Player
 
 def color_of_tile(test_tile):
     for color, tile in zip(TILE_COLORS, Tile):
@@ -33,20 +31,20 @@ class Controller:
     def setup_pvc_game(self):
         # assume computer plays second for now
         self.model = Model.start()
+        for board in self.view.boards:
+            board.clear()
         board = self.view.boards[0]
         board.add_pattern_lines_command(self.make_player_move)
         board.add_floor_line_command(self.make_player_move)
-        self.computer_player()
-        self.setup_round()
-
-    def computer_player(self):
+        self.computer_player = Heuristic_Player()
         self.make_computer_move()
-        self.job = self.view.master.after(1000, self.computer_player)
+        self.setup_round()
 
     def make_computer_move(self):
         if self.model.next_player == 1:
-            move = self.model.random_move()
+            move = self.computer_player.move(self.model)
             self.make_move(move)
+        self.job = self.view.master.after(1000, self.make_computer_move)
 
     def setup_round(self):
         self.model.setup_round()
@@ -167,21 +165,6 @@ class Controller:
         if self.model.is_valid_move(move, selected_board):
             self.make_move(move)
 
-    def make_computer_move(self):
-        if self.model.next_player == 1:
-            move = self.model.random_move()
-            self.make_move(move)
-
-    def make_player_and_computer_move(self, event, move_line):
-        if self.model.next_player == 0:
-            self.make_player_move(event, move_line)
-            self.view.master.after(2000)
-            self.make_computer_move()
-        else:
-            self.view.master.after(2000)
-            self.make_computer_move()
-            self.make_player_move(event, move_line)
-
     def make_move(self, move):
         player = self.model.next_player
         self.model.make_move(move)
@@ -194,7 +177,7 @@ class Controller:
             if self.model.game_over():
                 self.model.score_endgame()
                 self.mark_winner()
-                if self.job:
+                if hasattr(self, "job"):
                     self.view.master.after_cancel(self.job)
             else:
                 self.setup_round()
