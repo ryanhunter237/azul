@@ -49,7 +49,7 @@ class Heuristic_Player:
 			capacity = NUM_TILES * (row+1)
 			num = np.sum(board.wall[row,:] != 0) * (row+1)
 			num += board.pattern_lines[row].num
-			bonus += ROW_BONUS*num/capacity
+			bonus += ROW_BONUS*(num/capacity)**2
 		for col in range(NUM_TILES):
 			num = 0
 			for row in range(NUM_TILES):
@@ -59,7 +59,7 @@ class Heuristic_Player:
 					tile_val = board.pattern_lines[row].tile.value
 					if (tile_val + row - 1) % 5 == col:
 						num += board.pattern_lines[row].num
-			bonus += COLUMN_BONUS*num/15
+			bonus += COLUMN_BONUS*(num/15)**2
 		for tile in list(Tile):
 			num = 0
 			for row in range(NUM_TILES):
@@ -67,7 +67,7 @@ class Heuristic_Player:
 					num += (row+1)
 				elif tile == board.pattern_lines[row].tile:
 					num += board.pattern_lines[row].num
-			bonus += ALL_TILES_BONUS*num/15
+			bonus += ALL_TILES_BONUS*(num/15)**2
 		return bonus
 
 	def move_score(self, move, gamestate):
